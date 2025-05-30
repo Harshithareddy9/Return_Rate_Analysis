@@ -5,3 +5,4 @@ plotly
 openpyxl
 transformers
 torch
+emoji==0.6.0
