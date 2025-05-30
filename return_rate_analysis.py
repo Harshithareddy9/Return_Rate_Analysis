@@ -11,11 +11,9 @@ st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 # Then rest of your code
 @st.cache_resource
 def load_sentiment_model():
-    return pipeline("sentiment-analysis", model="finiteautomata/bertweet-base-sentiment-analysis")
-
+    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    
 sentiment_analyzer = load_sentiment_model()
-
-
 
 # --- Full Custom CSS ---
 css = """
