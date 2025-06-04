@@ -1,8 +1,8 @@
-streamlit
 pandas
 numpy
 plotly
 openpyxl
-transformers
-torch
+torch==2.0.1
+transformers==4.29.2
+streamlit==1.24.1
 emoji==0.6.0
