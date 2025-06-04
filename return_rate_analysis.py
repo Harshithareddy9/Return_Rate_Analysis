@@ -75,7 +75,7 @@ st.markdown(
 # --- Simulate dataset ---
 
 np.random.seed(42)
-n = 20000
+n = 10000
 
 # Categories and brands
 categories = ['Women > Ethnic Wear', 'Men > Casual', 'Kids > Wear', 'Electronics', 'Home & Kitchen', 'Sports']
