@@ -250,7 +250,7 @@ sentiment_counts = df['sentiment'].value_counts()
 st.write("### Sentiment Distribution:")
 st.write(sentiment_counts)
 
-negative_reviews = df[df['sentiment'] == 'NEG']
+negative_reviews = df[df['sentiment'] == 'NEGATIVE']
 common_issues = negative_reviews['customer_review'].value_counts().head(5)
 st.write("### Top Issues from Negative Reviews:")
 st.table(common_issues)
