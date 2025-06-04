@@ -11,9 +11,10 @@ st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 # --- Load sentiment model ---
 @st.cache_resource
 def load_sentiment_model():
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english",device=-1 )
 
 sentiment_analyzer = load_sentiment_model()
+
 
 # --- CSS ---
 css = """
