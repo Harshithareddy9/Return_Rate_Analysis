@@ -159,11 +159,14 @@ else:
 filtered_df['price_bucket'] = pd.cut(filtered_df['price'], bins=[0, 500, 1000, 20000], labels=["<₹500", "₹500–1000", ">₹1000"])
 filtered_df['order_month'] = filtered_df['order_date'].dt.to_period('M').dt.to_timestamp()
 
-# --- Return Rate by Category ---
-return_by_cat = filtered_df.groupby('category', observed=False)['return_status'] \
-    .apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
-return_by_cat['Return %'] = return_by_cat['Return %'].astype(float)
 
+
+
+
+
+
+# --- Return Rate by Category ---
+return_by_cat = filtered_df.groupby('category')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
 st.subheader("📊 Return Rate by Category")
 fig_cat = px.bar(return_by_cat, x='category', y='Return %', text='Return %',
                  labels={'Return %': 'Return Rate (%)', 'category': 'Category'}, color='Return %',
@@ -172,10 +175,7 @@ fig_cat.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
 st.plotly_chart(fig_cat, use_container_width=True)
 
 # --- Return Rate by Price Bucket ---
-price_return_rate = filtered_df.groupby('price_bucket', observed=False)['return_status'] \
-    .apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
-price_return_rate['Return %'] = price_return_rate['Return %'].astype(float)
-
+price_return_rate = filtered_df.groupby('price_bucket')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
 st.subheader("💰 Return Rate by Price Bucket")
 fig_price = px.bar(price_return_rate, x='price_bucket', y='Return %', text='Return %',
                    labels={'Return %': 'Return Rate (%)', 'price_bucket': 'Price Bucket'}, color='Return %',
