@@ -1,8 +1,10 @@
+import os
+os.environ["STREAMLIT_WATCHDOG_IGNORE_DOTFILES"] = "true"
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
 
 # --- Page config ---
 st.set_page_config(page_title="E-Commerce Returns", layout='wide')
@@ -11,8 +13,6 @@ st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 def load_sentiment_model():
     from transformers import pipeline
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-
-
 
 # --- Full Custom CSS ---
 css = """
@@ -59,19 +59,16 @@ h1, h2, h3 {
 """
 st.markdown(css, unsafe_allow_html=True)
 
-st.markdown(
-    """
+st.markdown("""
     <h1 style='text-align: center; width: 100%; font-size: 3em; margin-top: 20px;'>
        E-Commerce Return Analysis Dashboard
     </h1>
     <hr>
-    """,
-    unsafe_allow_html=True
-)
+""", unsafe_allow_html=True)
 
 # --- Simulate dataset ---
 np.random.seed(42)
-n = 5000  # Reduced dataset size for faster processing
+n = 5000
 
 categories = ['Women > Ethnic Wear', 'Men > Casual', 'Kids > Wear', 'Electronics', 'Home & Kitchen', 'Sports']
 brands = ['Ziyaa', 'Roadster', 'Local Seller', 'H&M', 'Samsung', 'Nike', 'Adidas', 'LG', 'Sony', 'Philips']
@@ -94,23 +91,17 @@ product_names_map = {
 category_choices = np.random.choice(categories, size=n)
 product_names = [np.random.choice(product_names_map[cat]) for cat in category_choices]
 
-sizes = []
-for cat in category_choices:
-    if 'Wear' in cat or cat == 'Men > Casual' or cat == 'Sports':
-        sizes.append(np.random.choice(['S', 'M', 'L', 'XL']))
-    else:
-        sizes.append(None)
-
+sizes = [np.random.choice(['S', 'M', 'L', 'XL']) if 'Wear' in cat or cat == 'Men > Casual' or cat == 'Sports' else None for cat in category_choices]
 brand_choices = np.random.choice(brands, size=n)
 
 return_status = []
 for cat in category_choices:
     if cat == 'Women > Ethnic Wear':
-        return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.60, 0.40]))  
+        return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.60, 0.40]))
     elif cat == 'Electronics':
         return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.50, 0.50]))
     else:
-        return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.30, 0.70]))  
+        return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.30, 0.70]))
 
 reasons = ['Size issue', 'Quality', 'Not as shown', 'Other']
 return_reasons = [np.random.choice(reasons) if status == 'Returned' else 'NA' for status in return_status]
@@ -118,45 +109,22 @@ return_reasons = [np.random.choice(reasons) if status == 'Returned' else 'NA' fo
 order_dates = pd.to_datetime('2024-01-01') + pd.to_timedelta(np.random.randint(0, 180, size=n), unit='D')
 
 tech_reviews = [
-    "Stopped working after one week.",
-    "Device heats up too much.",
-    "Battery life is terrible.",
-    "Not charging properly.",
-    "Came with scratches.",
-    "Packaging was damaged.",
-    "Doesn't connect via Bluetooth.",
-    "Poor sound quality.",
-    "Not turning on.",
-    "Defective screen.",
-    "The quality is bad for the price.",
-    "Affordable and great!",
-    "Excellent product, highly recommend!",
-    "Good value for money.",
-    "Did not meet expectations."
+    "Stopped working after one week.", "Device heats up too much.", "Battery life is terrible.",
+    "Not charging properly.", "Came with scratches.", "Packaging was damaged.",
+    "Doesn't connect via Bluetooth.", "Poor sound quality.", "Not turning on.", "Defective screen.",
+    "The quality is bad for the price.", "Affordable and great!", "Excellent product, highly recommend!",
+    "Good value for money.", "Did not meet expectations."
 ]
+
 general_reviews = [
-    "The quality is bad for the price.",
-    "Product was torn.",
-    "Fitting is not proper.",
-    "Very good, loved it!",
-    "Loose fitting but good material.",
-    "Too costly for what it offers.",
-    "Received wrong size.",
-    "Affordable and great!",
-    "Poor stitching quality.",
-    "Looks different than image.",
-    "Excellent product, highly recommend!",
-    "Did not meet expectations.",
-    "Good value for money.",
+    "The quality is bad for the price.", "Product was torn.", "Fitting is not proper.",
+    "Very good, loved it!", "Loose fitting but good material.", "Too costly for what it offers.",
+    "Received wrong size.", "Affordable and great!", "Poor stitching quality.", "Looks different than image.",
+    "Excellent product, highly recommend!", "Did not meet expectations.", "Good value for money.",
     "Color was not as shown."
 ]
 
-customer_reviews = []
-for cat in category_choices:
-    if cat == 'Electronics':
-        customer_reviews.append(np.random.choice(tech_reviews))
-    else:
-        customer_reviews.append(np.random.choice(general_reviews))
+customer_reviews = [np.random.choice(tech_reviews if cat == 'Electronics' else general_reviews) for cat in category_choices]
 
 df = pd.DataFrame({
     'order_id': np.arange(1, n+1),
@@ -175,12 +143,11 @@ df = pd.DataFrame({
 st.sidebar.header("Filter Options")
 selected_category = st.sidebar.multiselect("Select Category", options=df['category'].unique(), default=df['category'].unique())
 selected_brand = st.sidebar.multiselect("Select Brand", options=df['brand'].unique(), default=df['brand'].unique())
-
 run_sentiment = st.sidebar.checkbox("🔍 Run Sentiment Analysis on Reviews")
 
 filtered_df = df[(df['category'].isin(selected_category)) & (df['brand'].isin(selected_brand))].copy()
 
-# --- Sentiment Analysis (only run if user checks box) ---
+# --- Sentiment Analysis ---
 if run_sentiment:
     with st.spinner("Analyzing sentiment..."):
         sentiment_analyzer = load_sentiment_model()
@@ -193,7 +160,10 @@ filtered_df['price_bucket'] = pd.cut(filtered_df['price'], bins=[0, 500, 1000, 2
 filtered_df['order_month'] = filtered_df['order_date'].dt.to_period('M').dt.to_timestamp()
 
 # --- Return Rate by Category ---
-return_by_cat = filtered_df.groupby('category', observed=False)['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+return_by_cat = filtered_df.groupby('category', observed=False)['return_status'] \
+    .apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+return_by_cat['Return %'] = return_by_cat['Return %'].astype(float)
+
 st.subheader("📊 Return Rate by Category")
 fig_cat = px.bar(return_by_cat, x='category', y='Return %', text='Return %',
                  labels={'Return %': 'Return Rate (%)', 'category': 'Category'}, color='Return %',
@@ -202,7 +172,10 @@ fig_cat.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
 st.plotly_chart(fig_cat, use_container_width=True)
 
 # --- Return Rate by Price Bucket ---
-price_return_rate = filtered_df.groupby('price_bucket', observed=False)['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+price_return_rate = filtered_df.groupby('price_bucket', observed=False)['return_status'] \
+    .apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+price_return_rate['Return %'] = price_return_rate['Return %'].astype(float)
+
 st.subheader("💰 Return Rate by Price Bucket")
 fig_price = px.bar(price_return_rate, x='price_bucket', y='Return %', text='Return %',
                    labels={'Return %': 'Return Rate (%)', 'price_bucket': 'Price Bucket'}, color='Return %',
@@ -211,12 +184,15 @@ fig_price.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
 st.plotly_chart(fig_price, use_container_width=True)
 
 # --- Monthly Return Trend ---
-monthly_returns = filtered_df.groupby('order_month', observed=False)['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+monthly_returns = filtered_df.groupby('order_month', observed=False)['return_status'] \
+    .apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+monthly_returns['Return %'] = monthly_returns['Return %'].astype(float)
 st.subheader("📅 Monthly Return Rate Trend")
 fig_ts = px.line(monthly_returns, x='order_month', y='Return %',
                  labels={'order_month': 'Month', 'Return %': 'Return Rate (%)'},
                  markers=True)
 fig_ts.update_layout(yaxis_range=[0, 100])
+fig_ts.update_traces(mode="lines+markers", line=dict(color="#003366"))
 st.plotly_chart(fig_ts, use_container_width=True)
 
 # --- Warning Section ---
@@ -232,3 +208,4 @@ if not high_return_cats.empty or not high_return_prices.empty:
     if not high_return_prices.empty:
         st.write("Price buckets with return rate above 30%:")
         st.dataframe(high_return_prices)
+
