@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from io import BytesIO
 from transformers import pipeline
 
 # --- Page config ---
@@ -230,4 +229,4 @@ if not high_return_cats.empty or not high_return_prices.empty:
         st.dataframe(high_return_cats)
     if not high_return_prices.empty:
         st.write("Price buckets with return rate above 30%:")
-        st.dataframe(high_return_prices
+        st.dataframe(high_return_prices)
