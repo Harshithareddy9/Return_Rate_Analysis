@@ -188,7 +188,9 @@ filtered_df = df[(df['category'].isin(selected_category)) & (df['brand'].isin(se
 
 # --- Return Rate by Category ---
 return_by_cat = filtered_df.groupby('category')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
-return_by_cat['Return %'] = return_by_cat['Return %'].str.rstrip('%').astype(float)
+st.write(return_by_cat['Return %'].head())
+st.write(return_by_cat['Return %'].dtype)
+return_by_cat['Return %'] = return_by_cat['Return %'].astype(float)
 st.subheader("📊 Return Rate by Category")
 fig_cat = px.bar(return_by_cat, x='category', y='Return %', text='Return %',
                  color='Return %', color_continuous_scale='Reds', range_y=[0, 100])
@@ -197,7 +199,7 @@ st.plotly_chart(fig_cat, use_container_width=True)
 
 # --- Return Rate by Price Bucket ---
 price_return_rate = filtered_df.groupby('price_bucket')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
-price_return_rate['Return %'] = price_return_rate['Return %'].str.rstrip('%').astype(float)
+price_return_rate['Return %'] = price_return_rate['Return %'].astype(float)
 st.subheader("💰 Return Rate by Price Bucket")
 fig_price = px.bar(price_return_rate, x='price_bucket', y='Return %', text='Return %',
                    color='Return %', color_continuous_scale='Blues', range_y=[0, 100])
