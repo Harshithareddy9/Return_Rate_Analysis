@@ -187,27 +187,70 @@ selected_brand = st.sidebar.multiselect("Select Brand", options=df['brand'].uniq
 filtered_df = df[(df['category'].isin(selected_category)) & (df['brand'].isin(selected_brand))]
 
 # --- Return Rate by Category ---
-return_by_cat = filtered_df.groupby('category')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+return_by_cat = (
+    filtered_df.groupby('category')['return_status']
+    .apply(lambda x: (x == 'Returned').mean() * 100)
+    .reset_index(name='Return %')
+)
+
 st.write(return_by_cat['Return %'].head())
 st.write(return_by_cat['Return %'].dtype)
+
+# Ensure 'Return %' is float
 return_by_cat['Return %'] = return_by_cat['Return %'].astype(float)
+
+# Optional: create formatted text column for labels (fallback)
+return_by_cat['Return_text'] = return_by_cat['Return %'].map('{:.2f}%'.format)
+
 st.subheader("📊 Return Rate by Category")
-fig_cat = px.bar(return_by_cat, x='category', y='Return %', text='Return %',
-                 color='Return %', color_continuous_scale='Reds', range_y=[0, 100])
+fig_cat = px.bar(
+    return_by_cat,
+    x='category',
+    y='Return %',
+    text='Return %',  # or 'Return_text' to bypass texttemplate if needed
+    color='Return %',
+    color_continuous_scale='Reds',
+    range_y=[0, 100]
+)
+
 fig_cat.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
 st.plotly_chart(fig_cat, use_container_width=True)
 
 # --- Return Rate by Price Bucket ---
-price_return_rate = filtered_df.groupby('price_bucket')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+price_return_rate = (
+    filtered_df.groupby('price_bucket')['return_status']
+    .apply(lambda x: (x == 'Returned').mean() * 100)
+    .reset_index(name='Return %')
+)
+
 price_return_rate['Return %'] = price_return_rate['Return %'].astype(float)
+
+# Optional: create formatted text column for labels
+price_return_rate['Return_text'] = price_return_rate['Return %'].map('{:.2f}%'.format)
+
 st.subheader("💰 Return Rate by Price Bucket")
-fig_price = px.bar(price_return_rate, x='price_bucket', y='Return %', text='Return %',
-                   color='Return %', color_continuous_scale='Blues', range_y=[0, 100])
+fig_price = px.bar(
+    price_return_rate,
+    x='price_bucket',
+    y='Return %',
+    text='Return %',  # or 'Return_text' if you prefer preformatted labels
+    color='Return %',
+    color_continuous_scale='Blues',
+    range_y=[0, 100]
+)
+
 fig_price.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
 st.plotly_chart(fig_price, use_container_width=True)
 
 # --- Monthly Return Trend ---
-monthly_returns = filtered_df.groupby('order_month')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
+monthly_returns = (
+    filtered_df.groupby('order_month')['return_status']
+    .apply(lambda x: (x == 'Returned').mean() * 100)
+    .reset_index(name='Return %')
+)
+
+monthly_returns['Return %'] = monthly_returns['Return %'].astype(float)
+
 st.subheader("📅 Monthly Return Rate Trend")
 fig_ts = px.line(monthly_returns, x='order_month', y='Return %', markers=True)
 fig_ts.update_layout(yaxis_range=[0, 100])
