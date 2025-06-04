@@ -73,7 +73,7 @@ st.markdown(
 
 # --- Simulate dataset ---
 np.random.seed(42)
-n = 3000
+n = 2000
 
 categories = ['Women > Ethnic Wear', 'Men > Casual', 'Kids > Wear', 'Electronics', 'Home & Kitchen', 'Sports']
 brands = ['Ziyaa', 'Roadster', 'Local Seller', 'H&M', 'Samsung', 'Nike', 'Adidas', 'LG', 'Sony', 'Philips']
