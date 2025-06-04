@@ -8,11 +8,10 @@ from transformers import pipeline
 # --- Page config ---
 st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 
-# Then rest of your code
 @st.cache_resource
 def load_sentiment_model():
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-    
+
 sentiment_analyzer = load_sentiment_model()
 
 # --- Full Custom CSS ---
@@ -71,22 +70,18 @@ st.markdown(
 )
 
 # --- Simulate dataset ---
-
 np.random.seed(42)
-n = 20000
+n = 5000  # Reduced dataset size for faster processing
 
-# Categories and brands
 categories = ['Women > Ethnic Wear', 'Men > Casual', 'Kids > Wear', 'Electronics', 'Home & Kitchen', 'Sports']
 brands = ['Ziyaa', 'Roadster', 'Local Seller', 'H&M', 'Samsung', 'Nike', 'Adidas', 'LG', 'Sony', 'Philips']
 
-# Prices in three buckets
 prices = np.concatenate([
     np.random.choice(range(100, 500), size=int(n*0.3)),
     np.random.choice(range(500, 1500), size=int(n*0.4)),
     np.random.choice(range(1500, 10000), size=int(n*0.3))
 ])
 
-# Product name map
 product_names_map = {
     'Women > Ethnic Wear': ['Kurti', 'Saree', 'Lehenga'],
     'Men > Casual': ['T-Shirt', 'Jeans', 'Shirt'],
@@ -96,11 +91,9 @@ product_names_map = {
     'Sports': ['Football', 'Tennis Racket', 'Yoga Mat']
 }
 
-# Randomly assigned categories
 category_choices = np.random.choice(categories, size=n)
 product_names = [np.random.choice(product_names_map[cat]) for cat in category_choices]
 
-# Assign sizes where relevant
 sizes = []
 for cat in category_choices:
     if 'Wear' in cat or cat == 'Men > Casual' or cat == 'Sports':
@@ -108,27 +101,22 @@ for cat in category_choices:
     else:
         sizes.append(None)
 
-# Random brands
 brand_choices = np.random.choice(brands, size=n)
 
-# Customized return status with higher return rates for Women > Ethnic Wear and Electronics
 return_status = []
 for cat in category_choices:
     if cat == 'Women > Ethnic Wear':
         return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.60, 0.40]))  
-    elif cat=='Electronics':
+    elif cat == 'Electronics':
         return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.50, 0.50]))
     else:
         return_status.append(np.random.choice(['Returned', 'Not Returned'], p=[0.30, 0.70]))  
 
-# Return reasons (random if returned)
 reasons = ['Size issue', 'Quality', 'Not as shown', 'Other']
 return_reasons = [np.random.choice(reasons) if status == 'Returned' else 'NA' for status in return_status]
 
-# Order dates
 order_dates = pd.to_datetime('2024-01-01') + pd.to_timedelta(np.random.randint(0, 180, size=n), unit='D')
 
-# Sample reviews including some tech-specific complaints
 tech_reviews = [
     "Stopped working after one week.",
     "Device heats up too much.",
@@ -163,7 +151,6 @@ general_reviews = [
     "Color was not as shown."
 ]
 
-# Combine reviews with bias towards electronics getting technical complaints
 customer_reviews = []
 for cat in category_choices:
     if cat == 'Electronics':
@@ -171,7 +158,6 @@ for cat in category_choices:
     else:
         customer_reviews.append(np.random.choice(general_reviews))
 
-# Construct DataFrame
 df = pd.DataFrame({
     'order_id': np.arange(1, n+1),
     'product_name': product_names,
@@ -185,19 +171,25 @@ df = pd.DataFrame({
     'customer_review': customer_reviews
 })
 
-# --- Sentiment Analysis ---
-df['sentiment'] = df['customer_review'].apply(lambda x: sentiment_analyzer(x)[0]['label'])
-
-# --- Preprocessing ---
-df['price_bucket'] = pd.cut(df['price'], bins=[0, 500, 1000, 20000], labels=["<₹500", "₹500–1000", ">₹1000"])
-df['order_month'] = df['order_date'].dt.to_period('M').dt.to_timestamp()
-
 # --- Sidebar Filters ---
 st.sidebar.header("Filter Options")
 selected_category = st.sidebar.multiselect("Select Category", options=df['category'].unique(), default=df['category'].unique())
 selected_brand = st.sidebar.multiselect("Select Brand", options=df['brand'].unique(), default=df['brand'].unique())
 
+run_sentiment = st.sidebar.checkbox("🔍 Run Sentiment Analysis on Reviews")
+
 filtered_df = df[(df['category'].isin(selected_category)) & (df['brand'].isin(selected_brand))]
+
+# --- Sentiment Analysis (only run if user checks box) ---
+if run_sentiment:
+    with st.spinner("Analyzing sentiment..."):
+        filtered_df['sentiment'] = filtered_df['customer_review'].apply(lambda x: sentiment_analyzer(x)[0]['label'])
+else:
+    filtered_df['sentiment'] = 'Not analyzed'
+
+# --- Preprocessing ---
+filtered_df['price_bucket'] = pd.cut(filtered_df['price'], bins=[0, 500, 1000, 20000], labels=["<₹500", "₹500–1000", ">₹1000"])
+filtered_df['order_month'] = filtered_df['order_date'].dt.to_period('M').dt.to_timestamp()
 
 # --- Return Rate by Category ---
 return_by_cat = filtered_df.groupby('category')['return_status'].apply(lambda x: (x == 'Returned').mean() * 100).reset_index(name='Return %')
@@ -238,39 +230,4 @@ if not high_return_cats.empty or not high_return_prices.empty:
         st.dataframe(high_return_cats)
     if not high_return_prices.empty:
         st.write("Price buckets with return rate above 30%:")
-        st.dataframe(high_return_prices)
-else:
-    st.success("✅ All return rates are within normal limits.")
-
-# --- Customer Review Sentiment Analysis ---
-st.subheader("🧠 Customer Sentiment Insights")
-sentiment_counts = df['sentiment'].value_counts()
-st.write("### Sentiment Distribution:")
-st.write(sentiment_counts)
-
-negative_reviews = df[df['sentiment'] == 'NEG']
-common_issues = negative_reviews['customer_review'].value_counts().head(5)
-st.write("### Top Issues from Negative Reviews:")
-st.table(common_issues)
-
-if sentiment_counts.get("NEG", 0) > (0.3 * len(df)):
-    st.warning("🚨 High number of negative reviews detected. Consider product quality review or offering discounts.")
-else:
-    st.info("🟢 Review sentiment is mostly positive or neutral.")
-
-# --- Download filtered data ---
-def convert_df_to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Return Data')
-    return output.getvalue()
-
-st.markdown("---")
-st.subheader("📥 Download Filtered Data")
-excel_data = convert_df_to_excel(filtered_df)
-st.download_button(
-    label="Download Data as Excel",
-    data=excel_data,
-    file_name="filtered_return_data.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+        st.dataframe(high_return_prices
