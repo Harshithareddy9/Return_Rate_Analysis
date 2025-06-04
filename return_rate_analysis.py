@@ -2,16 +2,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from transformers import pipeline
+
 
 # --- Page config ---
 st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 
 @st.cache_resource
 def load_sentiment_model():
+    from transformers import pipeline
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
-sentiment_analyzer = load_sentiment_model()
+
 
 # --- Full Custom CSS ---
 css = """
@@ -182,6 +183,7 @@ filtered_df = df[(df['category'].isin(selected_category)) & (df['brand'].isin(se
 # --- Sentiment Analysis (only run if user checks box) ---
 if run_sentiment:
     with st.spinner("Analyzing sentiment..."):
+        sentiment_analyzer = load_sentiment_model()
         filtered_df['sentiment'] = filtered_df['customer_review'].apply(lambda x: sentiment_analyzer(x)[0]['label'])
 else:
     filtered_df['sentiment'] = 'Not analyzed'
