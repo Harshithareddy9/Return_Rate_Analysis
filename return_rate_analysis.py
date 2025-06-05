@@ -11,7 +11,7 @@ st.set_page_config(page_title="E-Commerce Returns", layout='wide')
 # --- Load sentiment model ---
 @st.cache_resource
 def load_sentiment_model():
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english",device=-1 )
+    return pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment", device=-1)
 
 sentiment_analyzer = load_sentiment_model()
 
@@ -174,7 +174,15 @@ df = pd.DataFrame({
 })
 
 # --- Sentiment Analysis ---
-df['sentiment'] = df['customer_review'].apply(lambda x: sentiment_analyzer(x)[0]['label'])
+# df['sentiment'] = df['customer_review'].apply(lambda x: sentiment_analyzer(x)[0]['label'])
+def analyze_sentiment_batch(texts, batch_size=32):
+    results = []
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        results.extend(sentiment_analyzer(batch))
+    return [r['label'] for r in results]
+
+df['sentiment'] = analyze_sentiment_batch(df['customer_review'].tolist())
 
 # --- Preprocessing ---
 df['price_bucket'] = pd.cut(df['price'], bins=[0, 500, 1000, 20000], labels=["<₹500", "₹500–1000", ">₹1000"])
@@ -193,9 +201,6 @@ return_by_cat = (
     .apply(lambda x: (x == 'Returned').mean() * 100)
     .reset_index(name='Return %')
 )
-
-st.write(return_by_cat['Return %'].head())
-st.write(return_by_cat['Return %'].dtype)
 
 # Ensure 'Return %' is float
 return_by_cat['Return %'] = return_by_cat['Return %'].astype(float)
